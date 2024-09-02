@@ -10,9 +10,10 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
-const user_module_1 = require("./user/user.module");
 const typeorm_1 = require("@nestjs/typeorm");
 const app_middleware_1 = require("./app.middleware");
+const config_1 = require("@nestjs/config");
+const auth_module_1 = require("./auth/auth.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(app_middleware_1.LoggerMiddleware);
@@ -22,17 +23,24 @@ exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            user_module_1.UserModule,
-            typeorm_1.TypeOrmModule.forRoot({
-                type: 'postgres',
-                host: 'localhost',
-                port: 5432,
-                username: 'postgres',
-                password: 'admin',
-                database: 'training',
-                autoLoadEntities: true,
-                synchronize: true,
+            config_1.ConfigModule.forRoot({
+                isGlobal: true,
             }),
+            typeorm_1.TypeOrmModule.forRootAsync({
+                imports: [config_1.ConfigModule],
+                inject: [config_1.ConfigService],
+                useFactory: (configService) => ({
+                    type: 'postgres',
+                    host: configService.get('DATABASE_HOST'),
+                    port: configService.get('DATABASE_PORT'),
+                    username: configService.get('DATABASE_USER'),
+                    password: configService.get('DATABASE_PASSWORD'),
+                    database: configService.get('DATABASE_NAME'),
+                    autoLoadEntities: true,
+                    synchronize: true,
+                }),
+            }),
+            auth_module_1.AuthModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
